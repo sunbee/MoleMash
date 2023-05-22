@@ -1,0 +1,7 @@
+{
+  "name": "MoleMash",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}
