@@ -21,7 +21,8 @@ export class HomePage implements AfterViewInit {
   private moles: Mole[] = [];
   private gameLoop: any;
   private gameOn: boolean = false;
-  public score!: number;
+  private timerLoop: any;
+  public countdown!: number;
   public selectedLevel: number = 1;
   private levels: any = [
     { moles: 3, interval: 2 },    // Level 1: 3 moles, new position every 2 seconds
@@ -43,7 +44,7 @@ export class HomePage implements AfterViewInit {
 
   ngAfterViewInit() {
     this.canvas = this.canvasRef.nativeElement;
-    this.score = 0;
+    this.countdown = 120;
 
     if (this.canvas instanceof HTMLCanvasElement) {
       this.context = this.canvas.getContext('2d') as CanvasRenderingContext2D;
@@ -73,13 +74,12 @@ export class HomePage implements AfterViewInit {
       const mouseY = (event.clientY - canvasTop) * canvasScaleY;
 
       this.moles.forEach((mole) => {
-        if (!mole.isPaused && mole.isMouseOver(mouseX, mouseY)) {
+        if (!mole.isPaused && mole.isMouseOver(mouseX, mouseY) && !mole.isDisabled) {
           mole.isDisabled = true;
           mole.squeak();
           mole.pause();
-          this.score++;
+          this.countdown += 20;
           this.updateScoreDisplayMessage()
-          // this.presentScoreToast('Touche! ' + this.score);
         }
       })
     });
@@ -96,11 +96,11 @@ export class HomePage implements AfterViewInit {
       const mouseY = (touch.clientY - canvasTop) * canvasScaleY;
 
       this.moles.forEach((mole) => {
-        if (mole && mole.isTouchOver(mouseX, mouseY)) {
+        if (mole && mole.isTouchOver(mouseX, mouseY) && !mole.isDisabled) {
           mole.isDisabled = true;
           mole.squeak();
           mole.pause();
-          this.score++;
+          this.countdown += 20;
           this.updateScoreDisplayMessage()
           // this.presentScoreToast('Touche! ' + this.score);
         }
@@ -128,6 +128,10 @@ export class HomePage implements AfterViewInit {
           mole.draw(this.context);
         }
       })      
+
+      // Check conditions for "Game Over!"
+      
+
     }, 1000 / this.levels[this.selectedLevel-1].interval); // Adjust the frame rate as desired (e.g., 12 frames per second)
   }
 
@@ -137,26 +141,38 @@ export class HomePage implements AfterViewInit {
     } else {
       this.moles = this.moleService.getMoles(this.levels[this.selectedLevel-1].moles);
       this.gameOn = true;
-      this.score = 0;
+      this.countdown = 120;
       this.updateScoreDisplayMessage();
       // Start the game logic here
       this.start_gameLoop();
+      this.start_timer();
     }
   };
 
   stopGame() {
     this.gameOn = false;
-    clearInterval(this.gameLoop);
+    if (this.gameLoop) clearInterval(this.gameLoop);
+    
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.score = 0;
+    this.countdown = 120;
     this.updateScoreDisplayMessage();
+  }
+
+  start_timer() {
+    this.timerLoop = setInterval(() => {
+      this.countdown--;
+    }, 1000);
+  }
+
+  stop_timer() {
+    if (this.timerLoop) clearInterval(this.timerLoop);
   }
 
   updateScoreDisplayMessage() {
     this.cdr.detectChanges()
     const scoreElement = document.getElementById('score-value');
     if (scoreElement) {
-      scoreElement.textContent = this.score.toString();
+      scoreElement.textContent = this.countdown.toString();
     }
   }
 
